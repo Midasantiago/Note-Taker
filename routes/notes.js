@@ -1,5 +1,5 @@
 const notes = require('express').Router();
-const { readFromFile, readAndAppend } = require('../helpers/fsUtils');
+const { readFromFile, writeToFile, readAndAppend } = require('../helpers/fsUtils');
 const uuid = require('../helpers/uuid');
 
 notes.get('/notes', (req, res) => {
@@ -23,5 +23,27 @@ notes.post('/notes', (req, res) => {
         res.errored('Error in adding note');
     }
 });
+
+notes.delete('/notes/:id', (req, res) => {
+    console.log(req.params.id);
+    const noteId = req.params.id;
+
+    readFromFile('./db/db.json')
+        .then((data) => {
+            const notes = JSON.parse(data);
+            const updatedNotes = notes.filter((note) =>  note.id !== noteId);
+
+            writeToFile('./db/db.json', updatedNotes)
+                .then(() => {
+                    res.json(`Note with ID ${noteId} deleted successfully`);
+                })
+                .catch((err) => {
+                    res.status(500).json(`Failed to delete note`);
+                });
+        })
+        .catch((err) => {
+            res.status(500).json('Failed to read file');
+        });
+})
 
 module.exports = notes;
